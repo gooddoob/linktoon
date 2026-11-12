@@ -1261,6 +1261,30 @@
       document.getElementById('detailModal').classList.add('hidden');
     }
 
+    // 뷰어 실행 시 웹에서 동적으로 주입하는 태그 추출 스크립트
+    // (앞으로 어떤 태그나 로직을 추가/수정해도 앱 재설치 없이 웹에서 100% 실시간 반영됨)
+    const DYNAMIC_EXTRACT_SCRIPT = `
+      (function() {
+        var h2s = document.getElementsByTagName('h2');
+        for (var i = 0; i < h2s.length; i++) {
+          var st = (h2s[i].getAttribute('style') || '').toLowerCase().replace(/\\s+/g, '');
+          if (st.indexOf('padding-left:60px') !== -1 || (st.indexOf('float:left') !== -1 && st.indexOf('font-size:15px') !== -1)) {
+            return (h2s[i].innerText || h2s[i].textContent || '').trim();
+          }
+        }
+        for (var i = 0; i < h2s.length; i++) {
+          var txt = (h2s[i].innerText || h2s[i].textContent || '').trim();
+          if (/\\d+\\s*화/.test(txt)) return txt;
+        }
+        var headings = document.querySelectorAll('h1, h3, .title, [class*="title"], [class*="episode"]');
+        for (var i = 0; i < headings.length; i++) {
+          var t = (headings[i].innerText || headings[i].textContent || '').trim();
+          if (/\\d+\\s*화/.test(t)) return t;
+        }
+        return document.title || '';
+      })();
+    `;
+
     // [핵심] 이어보기 클릭: 마지막 저장 링크로 이동 (Android 전용 웹뷰 연동)
     function handleContinueClick() {
       const item = items.find(it => it.id === currentSelectedItemId);
@@ -1269,7 +1293,7 @@
       if (!targetUrl) return;
 
       if (window.AndroidBridge && window.AndroidBridge.openViewer) {
-        window.AndroidBridge.openViewer(item.id, targetUrl, item.title || '');
+        window.AndroidBridge.openViewer(item.id, targetUrl, item.title || '', DYNAMIC_EXTRACT_SCRIPT);
       } else {
         window.open(targetUrl, '_blank');
       }
@@ -1282,7 +1306,7 @@
       if (!item.baseUrl) return;
 
       if (window.AndroidBridge && window.AndroidBridge.openViewer) {
-        window.AndroidBridge.openViewer(item.id, item.baseUrl, item.title || '');
+        window.AndroidBridge.openViewer(item.id, item.baseUrl, item.title || '', DYNAMIC_EXTRACT_SCRIPT);
       } else {
         window.open(item.baseUrl, '_blank');
       }
