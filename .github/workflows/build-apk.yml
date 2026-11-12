@@ -51,15 +51,15 @@ jobs:
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.1.0
-          name: LinkToon Android v1.1.0 (실시간 자동 업데이트 지원)
+          tag_name: v1.2.0
+          name: LinkToon Android v1.2.0 (회차 자동 감지 및 시인성 강화)
           body: |
-            ### 🚀 링크툰(LinkToon) v1.1.0 (무설치 실시간 자동 업데이트 지원 버전)
+            ### 🚀 링크툰(LinkToon) v1.2.0 업데이트 내역
             
-            - **실시간 무설치 자동 업데이트(OTA) 지원:** 웹뷰가 온라인 CDN(`https://gooddoob.github.io/linktoon/`)과 연동되어 디자인/목록/기능 수정 시 앱 재설치 없이 즉시 최신 버전이 반영됩니다.
-            - **오프라인 백업 모드:** 네트워크가 없거나 오프라인일 때는 기기 내장 오프라인 에셋으로 자동 전환됩니다.
-            - **풀스크린 네이티브 뷰어 & 이어보기 URL 자동 추적:** 웹툰 감상 시 회차 링크가 자동으로 갱신됩니다.
-            - **100% 로컬 데이터 저장:** 로그인 없이 스마트폰 기기에 모든 개인 데이터가 안전하게 저장됩니다.
+            - **회차 및 제목 정보 자동 감지 (Zero Click):** 뷰어에서 웹툰 감상 후 뒤로가기를 누르면 웹페이지 제목과 URL로부터 최신 회차(예: `123화`)를 자동으로 감지하여 메모/정보를 갱신합니다.
+            - **정보 텍스트 시인성 대폭 강화:** 카드 하단 정보 글자를 흐린 회색 대신 선명한 에메랄드 뱃지(`[🔖 123화]`) 형태로 개편하여 한눈에 들어오도록 개선했습니다.
+            - **자동 갱신 토스트 알림:** 뒤로가기 시 방금 읽은 회차가 무엇으로 갱신되었는지 하단 팝업으로 즉시 안내합니다.
+            - **실시간 무설치 자동 업데이트(OTA):** 온라인 CDN(`https://gooddoob.github.io/linktoon/`) 연동 지원.
           files: app/build/outputs/apk/debug/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

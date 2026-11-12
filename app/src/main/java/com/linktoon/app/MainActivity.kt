@@ -24,9 +24,18 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK && result.data != null) {
             val itemId = result.data?.getStringExtra("ITEM_ID")
             val updatedUrl = result.data?.getStringExtra("UPDATED_URL")
+            val updatedTitle = result.data?.getStringExtra("UPDATED_TITLE") ?: ""
             if (!itemId.isNullOrEmpty() && !updatedUrl.isNullOrEmpty()) {
                 runOnUiThread {
-                    val js = "javascript:if(window.onViewerUrlChanged){window.onViewerUrlChanged('$itemId', '$updatedUrl');}"
+                    val safeTitle = updatedTitle
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'")
+                        .replace("\n", " ")
+                        .replace("\r", "")
+                    val safeUrl = updatedUrl
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'")
+                    val js = "javascript:if(window.onViewerUrlChanged){window.onViewerUrlChanged('$itemId', '$safeUrl', '$safeTitle');}"
                     webView.evaluateJavascript(js, null)
                 }
             }

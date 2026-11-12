@@ -22,6 +22,7 @@ class ViewerActivity : AppCompatActivity() {
     private var itemId: String = ""
     private var initialUrl: String = ""
     private var latestUrl: String = ""
+    private var latestTitle: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,6 +70,13 @@ class ViewerActivity : AppCompatActivity() {
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onReceivedTitle(view: WebView?, title: String?) {
+                super.onReceivedTitle(view, title)
+                if (!title.isNullOrBlank() && !title.startsWith("http") && title != "about:blank") {
+                    latestTitle = title
+                }
+            }
+
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 if (newProgress < 100) {
                     progressBar.visibility = View.VISIBLE
@@ -94,6 +102,11 @@ class ViewerActivity : AppCompatActivity() {
                 url?.let {
                     if (isValidContentUrl(it)) {
                         latestUrl = it
+                    }
+                }
+                view?.title?.let {
+                    if (it.isNotBlank() && !it.startsWith("http") && it != "about:blank") {
+                        latestTitle = it
                     }
                 }
             }
@@ -123,9 +136,11 @@ class ViewerActivity : AppCompatActivity() {
     }
 
     private fun finishWithResult() {
+        val currentTitle = (webView.title?.takeIf { it.isNotBlank() && !it.startsWith("http") }) ?: latestTitle
         val data = Intent().apply {
             putExtra("ITEM_ID", itemId)
             putExtra("UPDATED_URL", latestUrl)
+            putExtra("UPDATED_TITLE", currentTitle)
         }
         setResult(Activity.RESULT_OK, data)
         finish()
