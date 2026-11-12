@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.LinkToon" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#03C75A</item>
+        <item name="colorPrimaryVariant">#02853C</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
