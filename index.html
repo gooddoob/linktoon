@@ -1320,7 +1320,7 @@
       }, 3000);
     }
 
-    // 제목 및 URL로부터 회차/에피소드 정보 스마트 자동 추출
+    // 제목 및 URL로부터 회차/에피소드 정보 스마트 자동 추출 (핵심: 마지막 xxx화만 쏙 추출)
     function formatEpisodeInfo(rawTitle, url, itemTitle) {
       let text = (rawTitle || '').trim();
       
@@ -1329,43 +1329,46 @@
         .replace(/\s*[:\-\|\/]\s*(네이버\s*웹툰|네이버\s*시리즈|카카오페이지|카카오웹툰|YouTube|유튜브|NAVER|웹툰\s*뷰어|만화).*$/i, '')
         .trim();
 
-      // 2. 작품 제목이 접두사나 접미사로 붙어있으면 제거하여 순수 회차명 추출
-      if (itemTitle && text.includes(itemTitle)) {
-        let stripped = text.replace(itemTitle, '').replace(/^[\s:\-\|\/\[\]\<\>]+|[\s:\-\|\/\[\]\<\>]+$/g, '').trim();
-        if (stripped.length > 0) {
-          text = stripped;
+      // 2. 텍스트 안에서 가장 마지막에 위치한 'xxx화' 패턴 추출 (사용자 요청: 마지막 xxx화 부분만 가져오기)
+      // 예: "<h2 style="...">화산귀환 150화</h2>" -> "150화"
+      // 예: "123화 - 새로운 적" -> "123화"
+      // 예: "제 45 화" -> "45화"
+      const epMatches = [...text.matchAll(/([제\s]*\d+[\.\-]?\d*\s*화)/g)];
+      if (epMatches && epMatches.length > 0) {
+        const lastEp = epMatches[epMatches.length - 1][1].trim();
+        // 숫자 부분만 추출하여 깔끔하게 'OO화' 형식으로 정규화
+        const numMatch = lastEp.match(/\d+[\.\-]?\d*/);
+        if (numMatch) {
+          return `${numMatch[0]}화`;
         }
+        return lastEp;
       }
 
-      // 3. URL 파라미터에서 회차 번호 추출 (예: ?no=123, &episode=123, /chapter/123)
-      let urlEp = null;
+      // 3. 텍스트에 화 정보가 없을 경우: URL 파라미터에서 추출 (예: ?no=123, &episode=123, /chapter/123)
       if (url) {
         try {
           const u = new URL(url);
           const no = u.searchParams.get('no') || u.searchParams.get('episode') || u.searchParams.get('chapter') || u.searchParams.get('ep') || u.searchParams.get('num');
           if (no && !isNaN(no)) {
-            urlEp = `${no}화`;
+            return `${no}화`;
           } else {
             const pathMatch = u.pathname.match(/\/(?:viewer|chapter|episode|ep|detail)\/(\d+)/i);
             if (pathMatch) {
-              urlEp = `${pathMatch[1]}화`;
+              return `${pathMatch[1]}화`;
             }
           }
         } catch (e) {}
       }
 
-      // 4. 에피소드 정규식 검사 ("123화", "제123화", "EP.12", "Chapter 5" 등)
-      const epMatch = text.match(/([제\s]*\d+[\.\-]?\d*\s*화|\bep\.?\s*\d+|\bch\.?\s*\d+|\bchapter\s*\d+)/i);
-
-      if (epMatch) {
+      // 4. 화 번호가 전혀 없는 경우: 제목이 있으면 정제된 제목 반환
+      if (text && text !== '웹툰' && text !== '웹툰 뷰어') {
+        if (itemTitle && text.includes(itemTitle)) {
+          let stripped = text.replace(itemTitle, '').replace(/^[\s:\-\|\/\[\]\<\>]+|[\s:\-\|\/\[\]\<\>]+$/g, '').trim();
+          if (stripped.length > 0) return stripped;
+        }
         return text;
-      } else if (urlEp) {
-        return (text && text !== '웹툰' && text !== '웹툰 뷰어') ? `${urlEp} - ${text}` : `${urlEp} 이어보기`;
-      } else if (text && text !== '웹툰' && text !== '웹툰 뷰어') {
-        return text;
-      } else if (urlEp) {
-        return `${urlEp} 이어보기`;
       }
+
       return null;
     }
 
