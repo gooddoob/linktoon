@@ -1,13 +1,16 @@
-name: Build LinkToon Android APK
+name: Build LinkToon Android APK & Deploy Pages
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    name: Build APK
+    name: Build APK and Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -38,12 +41,26 @@ jobs:
           name: LinkToon-App-Debug
           path: app/build/outputs/apk/debug/*.apk
 
+      - name: Deploy Web Assets to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./app/src/main/assets
+          publish_branch: gh-pages
+
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.0
-          name: LinkToon Android v1.0.0
+          tag_name: v1.1.0
+          name: LinkToon Android v1.1.0 (실시간 자동 업데이트 지원)
+          body: |
+            ### 🚀 링크툰(LinkToon) v1.1.0 (무설치 실시간 자동 업데이트 지원 버전)
+            
+            - **실시간 무설치 자동 업데이트(OTA) 지원:** 웹뷰가 온라인 CDN(`https://gooddoob.github.io/linktoon/`)과 연동되어 디자인/목록/기능 수정 시 앱 재설치 없이 즉시 최신 버전이 반영됩니다.
+            - **오프라인 백업 모드:** 네트워크가 없거나 오프라인일 때는 기기 내장 오프라인 에셋으로 자동 전환됩니다.
+            - **풀스크린 네이티브 뷰어 & 이어보기 URL 자동 추적:** 웹툰 감상 시 회차 링크가 자동으로 갱신됩니다.
+            - **100% 로컬 데이터 저장:** 로그인 없이 스마트폰 기기에 모든 개인 데이터가 안전하게 저장됩니다.
           files: app/build/outputs/apk/debug/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

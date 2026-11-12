@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -13,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private val onlineUrl = "https://gooddoob.github.io/linktoon/"
+    private val offlineAssetUrl = "file:///android_asset/index.html"
 
     private val viewerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -35,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
         webView = findViewById(R.id.mainWebView)
         setupWebView()
-        webView.loadUrl("file:///android_asset/index.html")
+        webView.loadUrl(onlineUrl)
     }
 
     private fun setupWebView() {
@@ -50,7 +54,19 @@ class MainActivity : AppCompatActivity() {
             cacheMode = WebSettings.LOAD_DEFAULT
         }
 
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request?.isForMainFrame == true) {
+                    // Fall back to offline assets if network is unreachable
+                    view?.loadUrl(offlineAssetUrl)
+                }
+            }
+        }
         webView.webChromeClient = WebChromeClient()
 
         webView.addJavascriptInterface(object {
@@ -74,3 +90,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
