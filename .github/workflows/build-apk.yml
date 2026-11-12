@@ -51,15 +51,14 @@ jobs:
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.2.0
-          name: LinkToon Android v1.2.0 (회차 자동 감지 및 시인성 강화)
+          tag_name: v1.2.1
+          name: LinkToon Android v1.2.1 (특정 h2 태그 및 마지막 xxx화 자동 추출)
           body: |
-            ### 🚀 링크툰(LinkToon) v1.2.0 업데이트 내역
+            ### 🚀 링크툰(LinkToon) v1.2.1 업데이트 내역
             
-            - **회차 및 제목 정보 자동 감지 (Zero Click):** 뷰어에서 웹툰 감상 후 뒤로가기를 누르면 웹페이지 제목과 URL로부터 최신 회차(예: `123화`)를 자동으로 감지하여 메모/정보를 갱신합니다.
-            - **정보 텍스트 시인성 대폭 강화:** 카드 하단 정보 글자를 흐린 회색 대신 선명한 에메랄드 뱃지(`[🔖 123화]`) 형태로 개편하여 한눈에 들어오도록 개선했습니다.
-            - **자동 갱신 토스트 알림:** 뒤로가기 시 방금 읽은 회차가 무엇으로 갱신되었는지 하단 팝업으로 즉시 안내합니다.
-            - **실시간 무설치 자동 업데이트(OTA):** 온라인 CDN(`https://gooddoob.github.io/linktoon/`) 연동 지원.
+            - **특정 태그 기반 회차 추출:** `<h2 style="...padding-left:60px...">` 등 웹페이지 내 주요 헤딩 태그를 정밀 탐색하여 텍스트를 감지합니다.
+            - **마지막 `xxx화` 부분만 정밀 추출:** 태그 안의 긴 제목 전체 대신, 문장 맨 뒤에 적힌 회차(`150화`, `123화` 등)만 쏙 뽑아내어 카드 정보에 저장합니다.
+            - **모든 링크 범용 지원:** 특정 h2 태그가 없는 사이트라도 URL(`?no=123`) 및 제목에서 마지막 `xxx화`를 찾아 자동으로 갱신합니다.
           files: app/build/outputs/apk/debug/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

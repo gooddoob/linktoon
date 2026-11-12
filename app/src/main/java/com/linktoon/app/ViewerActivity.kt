@@ -23,6 +23,7 @@ class ViewerActivity : AppCompatActivity() {
     private var initialUrl: String = ""
     private var latestUrl: String = ""
     private var latestTitle: String = ""
+    private var latestH2Text: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,6 +110,34 @@ class ViewerActivity : AppCompatActivity() {
                         latestTitle = it
                     }
                 }
+
+                // 지정된 h2 스타일 태그 또는 회차 포함 태그의 텍스트 자동 추출
+                val js = """
+                    (function() {
+                        var h2s = document.getElementsByTagName('h2');
+                        for (var i = 0; i < h2s.length; i++) {
+                            var st = (h2s[i].getAttribute('style') || '').toLowerCase().replace(/\s+/g, '');
+                            if (st.indexOf('padding-left:60px') !== -1 || (st.indexOf('float:left') !== -1 && st.indexOf('font-size:15px') !== -1)) {
+                                return (h2s[i].innerText || h2s[i].textContent || '').trim();
+                            }
+                        }
+                        for (var i = 0; i < h2s.length; i++) {
+                            var txt = (h2s[i].innerText || h2s[i].textContent || '').trim();
+                            if (/\d+\s*화/.test(txt)) {
+                                return txt;
+                            }
+                        }
+                        return '';
+                    })();
+                """.trimIndent()
+                view?.evaluateJavascript(js) { res ->
+                    if (!res.isNullOrBlank() && res != "null" && res != "\"\"") {
+                        val parsed = res.trim().removeSurrounding("\"").replace("\\\"", "\"").replace("\\n", " ").trim()
+                        if (parsed.isNotBlank()) {
+                            latestH2Text = parsed
+                        }
+                    }
+                }
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -136,7 +165,11 @@ class ViewerActivity : AppCompatActivity() {
     }
 
     private fun finishWithResult() {
-        val currentTitle = (webView.title?.takeIf { it.isNotBlank() && !it.startsWith("http") }) ?: latestTitle
+        val currentTitle = if (latestH2Text.isNotBlank()) {
+            latestH2Text
+        } else {
+            (webView.title?.takeIf { it.isNotBlank() && !it.startsWith("http") }) ?: latestTitle
+        }
         val data = Intent().apply {
             putExtra("ITEM_ID", itemId)
             putExtra("UPDATED_URL", latestUrl)
