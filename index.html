@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>링크툰 (LinkToon) - 요일별 링크 허브</title>
+  
+  <!-- PWA & Mobile Web App Settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#03C75A">
+  <link rel="icon" type="image/png" href="./favicon.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Pretendard Font (모바일 표준 폰트) -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf3',
+              100: '#d1fae1',
+              400: '#34d38c',
+              500: '#03C75A', // 네이버 웹툰 시그니처 그린
+              600: '#02a84a',
+              700: '#02853c',
+            }
+          },
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    /* 스크롤바 숨기기 (모바일 탭) */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-24 selection:bg-brand-500 selection:text-white">
+
+  <!-- ================= TOP APP BAR ================= -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+      <!-- 로고 및 오늘 날짜 -->
+      <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white shadow-sm shadow-brand-500/30">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <h1 class="text-lg font-extrabold tracking-tight text-slate-900">링크툰</h1>
+            <span id="todayBadge" class="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-600 border border-brand-200">
+              오늘: 목
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 우측 상단 액션 버튼 -->
+      <div class="flex items-center space-x-1">
+        <button onclick="openSearchModal()" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition" aria-label="검색">
+          <i data-lucide="search" class="w-5 h-5"></i>
+        </button>
+        <button onclick="openSettingsModal()" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition" aria-label="설정 및 백업">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+        <button onclick="openAddModal()" class="ml-1 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-full shadow-sm shadow-brand-500/20 flex items-center space-x-1 transition active:scale-95">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>등록</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= 요일 선택 탭 (네이버 웹툰 스타일) ================= -->
+    <div class="max-w-xl mx-auto px-2 border-t border-slate-100 bg-white">
+      <div id="dayTabsContainer" class="flex justify-between items-center overflow-x-auto no-scrollbar py-1">
+        <!-- 탭 버튼들은 JS에서 렌더링 -->
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 메인 콘텐츠 영역 ================= -->
+  <main class="max-w-xl mx-auto px-4 pt-4">
+    <!-- 서브 정보 바 (선택된 요일 & 개수) -->
+    <div class="flex items-center justify-between mb-3 px-1">
+      <div class="flex items-center space-x-1.5">
+        <span id="currentTabTitle" class="text-sm font-bold text-slate-900">목요 연재</span>
+        <span id="itemCountBadge" class="text-xs text-slate-400 font-medium">(0)</span>
+      </div>
+      <div class="flex items-center space-x-1 text-xs text-slate-500">
+        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+        <span>카드를 누르면 이어보기 창이 열립니다</span>
+      </div>
+    </div>
+
+    <!-- 링크 카드 그리드 (웹툰 모바일 스타일 2열) -->
+    <div id="cardGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <!-- 카드 렌더링 위치 -->
+    </div>
+
+    <!-- 비어있을 때 안내 UI -->
+    <div id="emptyState" class="hidden text-center py-16 px-4">
+      <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+        <i data-lucide="bookmark-plus" class="w-7 h-7"></i>
+      </div>
+      <h3 class="text-sm font-bold text-slate-800">등록된 링크가 없습니다</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-4">자주 보는 유튜브, 블로그, 웹툰을 등록해보세요!</p>
+      <button onclick="openAddModal()" class="px-4 py-2 bg-brand-500 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-brand-600 transition">
+        새 링크 등록하기
+      </button>
+    </div>
+  </main>
+
+  <!-- ================= 상세 / 이어보기 모달 ================= -->
+  <div id="detailModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeDetailModal()"></div>
+    <div class="absolute bottom-0 inset-x-0 max-w-lg mx-auto bg-white rounded-t-3xl shadow-2xl p-5 transform transition-transform border border-slate-200">
+      <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4"></div>
+      
+      <div class="flex items-start space-x-3 mb-4">
+        <div id="detailThumbContainer" class="w-20 h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 shadow-inner">
+          <img id="detailThumb" src="" alt="썸네일" class="w-full h-full object-cover">
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center space-x-1.5 mb-1">
+            <span id="detailPlatform" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-100 text-slate-700">플랫폼</span>
+            <span id="detailDays" class="text-[11px] font-medium text-slate-500">요일</span>
+          </div>
+          <h2 id="detailTitle" class="text-base font-bold text-slate-900 truncate">제목</h2>
+          <p id="detailMemo" class="text-xs text-slate-500 mt-1 line-clamp-2">메모/설명</p>
+        </div>
+      </div>
+
+      <!-- 마지막 방문 정보 -->
+      <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 mb-4">
+        <div class="text-[11px] font-bold text-slate-500 mb-1 flex items-center justify-between">
+          <span class="flex items-center space-x-1">
+            <i data-lucide="history" class="w-3.5 h-3.5 text-brand-600"></i>
+            <span>마지막으로 본 링크</span>
+          </span>
+          <span id="detailLastUpdated" class="text-[10px] font-normal text-slate-400">방금 전</span>
+        </div>
+        <p id="detailLastUrlText" class="text-xs text-slate-700 font-mono truncate select-all">
+          https://...
+        </p>
+      </div>
+
+      <!-- 액션 버튼들 -->
+      <div class="space-y-2">
+        <!-- 핵심: 마지막 링크로 이어보기 -->
+        <button id="btnContinueReading" onclick="handleContinueClick()" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 active:scale-[0.98] text-white rounded-2xl font-bold text-sm shadow-md shadow-brand-500/25 flex items-center justify-center space-x-2 transition">
+          <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+          <span>마지막 위치로 이어서 보기</span>
+        </button>
+
+        <div class="grid grid-cols-2 gap-2">
+          <!-- 기본 홈 링크로 이동 -->
+          <button id="btnOpenBaseUrl" onclick="handleBaseUrlClick()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 transition">
+            <i data-lucide="home" class="w-3.5 h-3.5"></i>
+            <span>메인/홈으로 이동</span>
+          </button>
+          
+          <!-- 링크 갱신 (빠른 업데이트) -->
+          <button onclick="promptUpdateLastUrl()" class="py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 transition">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            <span>마지막 위치 갱신</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 수정 / 삭제 바닥 메뉴 -->
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <button onclick="editCurrentItem()" class="hover:text-slate-900 flex items-center space-x-1">
+          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+          <span>정보 수정</span>
+        </button>
+        <button onclick="deleteCurrentItem()" class="hover:text-red-600 text-red-500 flex items-center space-x-1">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>삭제</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 마지막 위치 갱신 전용 깔끔 모달 ================= -->
+  <div id="quickUpdateModal" class="fixed inset-0 z-[60] hidden flex items-end sm:items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeQuickUpdateModal()"></div>
+    <div class="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 border border-slate-200">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
+          <i data-lucide="sparkles" class="w-4 h-4 text-brand-500"></i>
+          <span>마지막 위치 최신화</span>
+        </h3>
+        <button onclick="closeQuickUpdateModal()" class="p-1 text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 mb-3">
+        새로 공부하거나 시청한 최신 링크와 진도 메모를 덮어씁니다.
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">새 마지막 링크</label>
+          <div class="flex space-x-1.5">
+            <input type="url" id="quickUpdateUrl" placeholder="https://..." class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono">
+            <button type="button" onclick="pasteClipboardToQuickUpdate()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center space-x-1 transition active:scale-95 flex-shrink-0">
+              <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+              <span>붙여넣기</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">진도 메모 (선택)</label>
+          <input type="text" id="quickUpdateMemo" placeholder="예: 4강 완강, 15화까지 봄" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+
+        <button onclick="submitQuickUpdate()" class="w-full py-2.5 bg-brand-500 hover:bg-brand-600 active:scale-[0.98] text-white font-bold rounded-xl text-xs shadow-md shadow-brand-500/25 transition">
+          최신 위치로 갱신하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 링크 등록/수정 모달 ================= -->
+  <div id="formModal" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeFormModal()"></div>
+    <div class="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 max-h-[90vh] overflow-y-auto border border-slate-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="formModalTitle" class="text-base font-bold text-slate-900">새 링크 등록</h3>
+        <button onclick="closeFormModal()" class="p-1 text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="itemForm" onsubmit="saveItem(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="formItemId">
+
+        <!-- 제목 -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">제목 <span class="text-red-500">*</span></label>
+          <input type="text" id="formTitle" required placeholder="예: 침착맨 유튜브, 토스 기술블로그, 00웹툰" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+        </div>
+
+        <!-- 요일 선택 (복수 선택 가능) -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">연재/확인 요일 (다중 선택 가능) <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-7 gap-1" id="formDayChips">
+            <button type="button" data-day="월" class="day-chip py-2 rounded-lg font-bold border border-slate-200 text-slate-600">월</button>
+            <button type="button" data-day="화" class="day-chip py-2 rounded-lg font-bold border border-slate-200 text-slate-600">화</button>
+            <button type="button" data-day="수" class="day-chip py-2 rounded-lg font-bold border border-slate-200 text-slate-600">수</button>
+            <button type="button" data-day="목" class="day-chip py-2 rounded-lg font-bold border border-slate-200 text-slate-600">목</button>
+            <button type="button" data-day="금" class="day-chip py-2 rounded-lg font-bold border border-slate-200 text-slate-600">금</button>
+            <button type="button" data-day="토" class="day-chip py-2 rounded-lg font-bold border border-slate-200 text-slate-600">토</button>
+            <button type="button" data-day="일" class="day-chip py-2 rounded-lg font-bold border border-slate-200 text-slate-600">일</button>
+          </div>
+        </div>
+
+        <!-- 플랫폼 선택 -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">플랫폼 유형</label>
+          <div class="grid grid-cols-4 gap-1.5" id="formPlatformChips">
+            <button type="button" data-platform="유튜브" class="platform-chip py-1.5 px-2 rounded-lg border border-slate-200 font-medium">유튜브</button>
+            <button type="button" data-platform="블로그" class="platform-chip py-1.5 px-2 rounded-lg border border-slate-200 font-medium">블로그</button>
+            <button type="button" data-platform="웹툰/웹소설" class="platform-chip py-1.5 px-2 rounded-lg border border-slate-200 font-medium">웹툰/소설</button>
+            <button type="button" data-platform="기타웹" class="platform-chip py-1.5 px-2 rounded-lg border border-slate-200 font-medium">기타</button>
+          </div>
+        </div>
+
+        <!-- 기본 메인 URL -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">기본 메인 링크 <span class="text-red-500">*</span></label>
+          <input type="url" id="formBaseUrl" required placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
+        </div>
+
+        <!-- 마지막으로 본 링크 (이어보기) -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">마지막으로 본 링크 (선택, 비우면 기본 링크와 동일)</label>
+          <input type="url" id="formLastUrl" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
+        </div>
+
+        <!-- 썸네일 이미지 링크 및 파일 선택 -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">썸네일 이미지 (URL 또는 갤러리/파일)</label>
+          <div class="space-y-1.5">
+            <input type="text" id="formThumbUrl" placeholder="이미지 URL 직접 입력 (https://...)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
+            <div class="flex items-center space-x-2">
+              <label class="flex-1 py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-center cursor-pointer font-bold transition flex items-center justify-center space-x-1.5">
+                <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                <span>내 폰 갤러리/파일에서 선택</span>
+                <input type="file" id="formThumbFile" accept="image/*" onchange="handleThumbFileSelect(event)" class="hidden">
+              </label>
+              <div id="formThumbPreviewContainer" class="w-9 h-11 rounded-lg overflow-hidden bg-slate-100 hidden border border-slate-200 flex-shrink-0">
+                <img id="formThumbPreview" class="w-full h-full object-cover">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 메모/최신 회차 표시 -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">메모 또는 현재 회차 정보</label>
+          <input type="text" id="formMemo" placeholder="예: 52화까지 봄, 매주 목요일 오후 6시 업로드" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
+        </div>
+
+        <div class="pt-3">
+          <button type="submit" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl text-sm shadow-md transition">
+            저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= 검색 모달 ================= -->
+  <div id="searchModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeSearchModal()"></div>
+    <div class="absolute top-16 inset-x-4 max-w-lg mx-auto bg-white rounded-2xl shadow-xl p-4 border border-slate-200">
+      <div class="relative mb-3">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+        <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="등록한 링크 제목 또는 메모 검색..." class="w-full pl-9 pr-4 py-2 bg-slate-50 rounded-xl text-xs border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <div id="searchResults" class="max-h-60 overflow-y-auto divide-y divide-slate-100 text-xs">
+        <!-- 검색 결과 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 설정 & 백업 모달 ================= -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeSettingsModal()"></div>
+    <div class="absolute bottom-0 sm:bottom-auto sm:top-20 inset-x-0 sm:inset-x-4 max-w-lg mx-auto bg-white rounded-t-3xl sm:rounded-3xl shadow-xl p-5 border border-slate-200 text-xs">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-900">데이터 백업 및 휴대폰 연동</h3>
+        <button onclick="closeSettingsModal()" class="p-1 text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-slate-500 leading-relaxed mb-4">
+        등록하신 링크 정보는 <strong>현재 기기(브라우저 저장소)</strong>에 안전하게 보관됩니다. 다른 기기나 휴대폰으로 데이터를 옮기려면 아래 백업/복원 기능을 이용하세요.
+      </p>
+
+      <div class="space-y-2 mb-4">
+        <button onclick="exportData()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl flex items-center justify-center space-x-1.5 transition">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>데이터 파일로 백업 (JSON 다운로드)</span>
+        </button>
+
+        <label class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer transition">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          <span>백업 파일 복원 (JSON 불러오기)</span>
+          <input type="file" accept=".json" onchange="importData(event)" class="hidden">
+        </label>
+
+        <button onclick="resetToSampleData()" class="w-full py-2 text-slate-400 hover:text-slate-600 font-medium">
+          기본 예시 데이터로 초기화
+        </button>
+      </div>
+
+      <div class="bg-brand-50 border border-brand-100 rounded-xl p-3 text-brand-800">
+        <div class="font-bold mb-1 flex items-center space-x-1">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+          <span>갤럭시 폰에서 앱처럼 띄우는 꿀팁</span>
+        </div>
+        <p class="text-[11px] text-brand-700 leading-snug">
+          휴대폰의 <strong>삼성 인터넷</strong>이나 <strong>크롬</strong> 브라우저 메뉴에서 <br>
+          <strong>[홈 화면에 추가]</strong>를 누르면 진짜 앱 아이콘처럼 설치되어 주소창 없이 전체화면으로 실행됩니다!
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT ================= -->
+  <script>
+    // 1. 요일 정의
+    const DAYS = ['월', '화', '수', '목', '금', '토', '일', '전체'];
+    const DAY_MAP = ['일', '월', '화', '수', '목', '금', '토']; // JS getDay() 매핑
+    
+    // 오늘 요일 계산
+    const now = new Date();
+    const todayKoreanDay = DAY_MAP[now.getDay()];
+    let activeDay = todayKoreanDay; // 기본은 오늘 요일
+    let items = [];
+    let currentSelectedItemId = null;
+
+    // 2. 초기 샘플 데이터
+    const SAMPLE_ITEMS = [
+      // 월요 연재
+      {
+        id: 'ironblood-hound-mon',
+        title: '철혈검가 사냥개의 회귀',
+        days: ['월'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://comic.naver.com',
+        lastUrl: 'https://comic.naver.com',
+        thumbUrl: './images/ironblood_hound.jpg',
+        memo: '월요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'childhood-friend-mon',
+        title: '천하제일인의 소꿉친구',
+        days: ['월'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://comic.naver.com',
+        lastUrl: 'https://comic.naver.com',
+        thumbUrl: './images/childhood_friend.jpg',
+        memo: '월요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'archmage-reincarnation-mon',
+        title: '용사파티 대마법사의 환생',
+        days: ['월'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/archmage_reincarnation.jpg',
+        memo: '월요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      // 화요 연재
+      {
+        id: 'novel-extra-tue',
+        title: '소설 속 엑스트라',
+        days: ['화'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/novel_extra.jpg',
+        memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'demon-contract-tue',
+        title: '마족의 계약',
+        days: ['화'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/demon_contract.jpg',
+        memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'healing-successor-tue',
+        title: '후계자는 모르겠고 힐링이나 하렵니다',
+        days: ['화'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/healing_successor.jpg',
+        memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'swordsman-stream-tue',
+        title: '검술 고인물의 게임방송',
+        days: ['화'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://comic.naver.com',
+        lastUrl: 'https://comic.naver.com',
+        thumbUrl: './images/swordsman_stream.jpg',
+        memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      // 수요 연재
+      {
+        id: 'crazy-villain-wed',
+        title: '미친 빌런이 정신을 되찾음',
+        days: ['수'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/crazy_villain.jpg',
+        memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'nangseon-wed',
+        title: '낭선기환담',
+        days: ['수'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://comic.naver.com',
+        lastUrl: 'https://comic.naver.com',
+        thumbUrl: './images/nangseon.jpg',
+        memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'maxlevel-100th-wed',
+        title: '만렙플레이어의 100번째 회귀',
+        days: ['수'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/maxlevel_100th.jpg',
+        memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'levelup-with-gods-wed',
+        title: '신과 함께 레벨업',
+        days: ['수'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/levelup_with_gods.jpg',
+        memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'civil-servant-hunter-wed',
+        title: '공무원 헌터의 S급 퇴사일지',
+        days: ['수'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/civil_servant_hunter.jpg',
+        memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      // 목요 연재
+      {
+        id: 'pick-me-up-thu',
+        title: '픽미업',
+        days: ['목'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://comic.naver.com',
+        lastUrl: 'https://comic.naver.com',
+        thumbUrl: './images/pick_me_up.jpg',
+        memo: '목요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'damn-reincarnation-thu',
+        title: '빌어먹을 환생',
+        days: ['목'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/damn_reincarnation.jpg',
+        memo: '목요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      // 금요 연재
+      {
+        id: 'sss-hunter-fri',
+        title: 'SSS급 죽어야 사는 헌터',
+        days: ['금'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com/content/56475723',
+        lastUrl: 'https://page.kakao.com/content/56475723',
+        thumbUrl: './images/sss_hunter.jpg',
+        memo: '금요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'vampire-lord-fri',
+        title: '뱀파이어 로드로 사는 법',
+        days: ['금'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/vampire_lord.jpg',
+        memo: '금요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'barbarian-fri',
+        title: '판타지 세계 속 바바리안으로 살아가기',
+        days: ['금'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://comic.naver.com',
+        lastUrl: 'https://comic.naver.com',
+        thumbUrl: './images/barbarian.jpg',
+        memo: '금요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      // 토요 연재
+      {
+        id: 'boss-swallow-sat',
+        title: '보스몹답게 행동하세요, 스왈로우 씨!',
+        days: ['토'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/boss_swallow.jpg',
+        memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'frozen-player-sat',
+        title: '얼어붙은 플레이어의 귀환',
+        days: ['토'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/frozen_player.jpg',
+        memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'dungeon-odyssey-sat',
+        title: '던전견문록',
+        days: ['토'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/dungeon_odyssey.jpg',
+        memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'villain-wants-live-sat',
+        title: '악당은 살고 싶다',
+        days: ['토'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/villain_wants_live.jpg',
+        memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'helmut-sat',
+        title: '헬무트',
+        days: ['토'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/helmut.jpg',
+        memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'honey-professor-sat',
+        title: '꿀 빨고 싶은 천재 교수님',
+        days: ['토'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/honey_professor.jpg',
+        memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      // 일요 연재
+      {
+        id: 'swordmaster-son-sun',
+        title: '검술명가 막내아들',
+        days: ['일'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/swordmaster_son.jpg',
+        memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'sinmadeje-sun',
+        title: '신마대제',
+        days: ['일'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/sinmadeje.jpg',
+        memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'reincarnator-streaming-sun',
+        title: '환생자의 스트리밍',
+        days: ['일'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/reincarnator_streaming.jpg',
+        memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'prosecutor-kim-sun',
+        title: '검사 김서진',
+        days: ['일'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/prosecutor_kim.jpg',
+        memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'murim-civil-servant-sun',
+        title: '무림 속 공무원으로 살아가는 법',
+        days: ['일'],
+        platform: '웹툰/웹소설',
+        baseUrl: 'https://page.kakao.com',
+        lastUrl: 'https://page.kakao.com',
+        thumbUrl: './images/murim_civil_servant.jpg',
+        memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+        updatedAt: new Date().toISOString()
+      }
+    ];
+
+    // 3. 로컬 스토리지 초기화
+    function loadItems() {
+      const stored = localStorage.getItem('linktoon_items');
+      if (stored) {
+        try {
+          items = JSON.parse(stored);
+        } catch(e) {
+          items = SAMPLE_ITEMS;
+        }
+      } else {
+        items = SAMPLE_ITEMS;
+      }
+
+      // 등록 보장할 웹툰 목록 (월/화/금)
+      const guaranteedItems = [
+        // 월요일
+        {
+          id: 'ironblood-hound-mon',
+          title: '철혈검가 사냥개의 회귀',
+          days: ['월'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://comic.naver.com',
+          lastUrl: 'https://comic.naver.com',
+          thumbUrl: './images/ironblood_hound.jpg',
+          memo: '월요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'childhood-friend-mon',
+          title: '천하제일인의 소꿉친구',
+          days: ['월'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://comic.naver.com',
+          lastUrl: 'https://comic.naver.com',
+          thumbUrl: './images/childhood_friend.jpg',
+          memo: '월요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'archmage-reincarnation-mon',
+          title: '용사파티 대마법사의 환생',
+          days: ['월'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/archmage_reincarnation.jpg',
+          memo: '월요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        // 화요일
+        {
+          id: 'novel-extra-tue',
+          title: '소설 속 엑스트라',
+          days: ['화'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/novel_extra.jpg',
+          memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'demon-contract-tue',
+          title: '마족의 계약',
+          days: ['화'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/demon_contract.jpg',
+          memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'healing-successor-tue',
+          title: '후계자는 모르겠고 힐링이나 하렵니다',
+          days: ['화'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/healing_successor.jpg',
+          memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'swordsman-stream-tue',
+          title: '검술 고인물의 게임방송',
+          days: ['화'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://comic.naver.com',
+          lastUrl: 'https://comic.naver.com',
+          thumbUrl: './images/swordsman_stream.jpg',
+          memo: '화요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        // 수요일
+        {
+          id: 'crazy-villain-wed',
+          title: '미친 빌런이 정신을 되찾음',
+          days: ['수'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/crazy_villain.jpg',
+          memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'nangseon-wed',
+          title: '낭선기환담',
+          days: ['수'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://comic.naver.com',
+          lastUrl: 'https://comic.naver.com',
+          thumbUrl: './images/nangseon.jpg',
+          memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'maxlevel-100th-wed',
+          title: '만렙플레이어의 100번째 회귀',
+          days: ['수'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/maxlevel_100th.jpg',
+          memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'levelup-with-gods-wed',
+          title: '신과 함께 레벨업',
+          days: ['수'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/levelup_with_gods.jpg',
+          memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'civil-servant-hunter-wed',
+          title: '공무원 헌터의 S급 퇴사일지',
+          days: ['수'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/civil_servant_hunter.jpg',
+          memo: '수요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        // 목요일
+        {
+          id: 'pick-me-up-thu',
+          title: '픽미업',
+          days: ['목'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://comic.naver.com',
+          lastUrl: 'https://comic.naver.com',
+          thumbUrl: './images/pick_me_up.jpg',
+          memo: '목요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'damn-reincarnation-thu',
+          title: '빌어먹을 환생',
+          days: ['목'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/damn_reincarnation.jpg',
+          memo: '목요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        // 금요일
+        {
+          id: 'sss-hunter-fri',
+          title: 'SSS급 죽어야 사는 헌터',
+          days: ['금'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com/content/56475723',
+          lastUrl: 'https://page.kakao.com/content/56475723',
+          thumbUrl: './images/sss_hunter.jpg',
+          memo: '금요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'vampire-lord-fri',
+          title: '뱀파이어 로드로 사는 법',
+          days: ['금'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/vampire_lord.jpg',
+          memo: '금요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'barbarian-fri',
+          title: '판타지 세계 속 바바리안으로 살아가기',
+          days: ['금'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://comic.naver.com',
+          lastUrl: 'https://comic.naver.com',
+          thumbUrl: './images/barbarian.jpg',
+          memo: '금요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        // 토요일
+        {
+          id: 'boss-swallow-sat',
+          title: '보스몹답게 행동하세요, 스왈로우 씨!',
+          days: ['토'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/boss_swallow.jpg',
+          memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'frozen-player-sat',
+          title: '얼어붙은 플레이어의 귀환',
+          days: ['토'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/frozen_player.jpg',
+          memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'dungeon-odyssey-sat',
+          title: '던전견문록',
+          days: ['토'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/dungeon_odyssey.jpg',
+          memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'villain-wants-live-sat',
+          title: '악당은 살고 싶다',
+          days: ['토'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/villain_wants_live.jpg',
+          memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'helmut-sat',
+          title: '헬무트',
+          days: ['토'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/helmut.jpg',
+          memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'honey-professor-sat',
+          title: '꿀 빨고 싶은 천재 교수님',
+          days: ['토'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/honey_professor.jpg',
+          memo: '토요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        // 일요일
+        {
+          id: 'swordmaster-son-sun',
+          title: '검술명가 막내아들',
+          days: ['일'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/swordmaster_son.jpg',
+          memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'sinmadeje-sun',
+          title: '신마대제',
+          days: ['일'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/sinmadeje.jpg',
+          memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'reincarnator-streaming-sun',
+          title: '환생자의 스트리밍',
+          days: ['일'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/reincarnator_streaming.jpg',
+          memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'prosecutor-kim-sun',
+          title: '검사 김서진',
+          days: ['일'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/prosecutor_kim.jpg',
+          memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'murim-civil-servant-sun',
+          title: '무림 속 공무원으로 살아가는 법',
+          days: ['일'],
+          platform: '웹툰/웹소설',
+          baseUrl: 'https://page.kakao.com',
+          lastUrl: 'https://page.kakao.com',
+          thumbUrl: './images/murim_civil_servant.jpg',
+          memo: '일요 연재 웹툰 / 최근 회차 이어보기',
+          updatedAt: new Date().toISOString()
+        }
+      ];
+
+      guaranteedItems.forEach(target => {
+        const idx = items.findIndex(it => it.title && it.title.includes(target.title));
+        if (idx === -1) {
+          items.unshift(target);
+        } else {
+          items[idx].thumbUrl = target.thumbUrl;
+          target.days.forEach(d => {
+            if (!items[idx].days.includes(d)) {
+              items[idx].days.push(d);
+            }
+          });
+        }
+      });
+
+      saveItemsToStorage();
+    }
+
+    function saveItemsToStorage() {
+      localStorage.setItem('linktoon_items', JSON.stringify(items));
+    }
+
+    // 4. UI 렌더링
+    function initUI() {
+      // 상단 오늘 배지
+      document.getElementById('todayBadge').textContent = `오늘: ${todayKoreanDay}요일`;
+
+      // 요일 탭 생성
+      const container = document.getElementById('dayTabsContainer');
+      container.innerHTML = DAYS.map(day => {
+        const isToday = day === todayKoreanDay;
+        const isActive = day === activeDay;
+        return `
+          <button onclick="switchTab('${day}')" class="relative flex-shrink-0 flex items-center justify-center px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            isActive 
+              ? 'bg-slate-900 text-white shadow-sm' 
+              : 'text-slate-600 hover:bg-slate-100'
+          }">
+            <span>${day}</span>
+            ${isToday ? `<span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${isActive ? 'bg-brand-400' : 'bg-brand-500'}"></span>` : ''}
+          </button>
+        `;
+      }).join('');
+
+      renderCards();
+      lucide.createIcons();
+    }
+
+    function switchTab(day) {
+      activeDay = day;
+      initUI();
+    }
+
+    function renderCards() {
+      const grid = document.getElementById('cardGrid');
+      const emptyState = document.getElementById('emptyState');
+      const currentTabTitle = document.getElementById('currentTabTitle');
+      const itemCountBadge = document.getElementById('itemCountBadge');
+
+      currentTabTitle.textContent = activeDay === '전체' ? '전체 링크' : `${activeDay}요 연재`;
+
+      // 필터링
+      const filtered = activeDay === '전체' 
+        ? items 
+        : items.filter(it => it.days && it.days.includes(activeDay));
+
+      itemCountBadge.textContent = `(${filtered.length})`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(item => {
+        // 플랫폼별 뱃지 색상
+        let badgeColor = 'bg-slate-800 text-white';
+        if (item.platform === '유튜브') badgeColor = 'bg-red-500 text-white';
+        else if (item.platform === '블로그') badgeColor = 'bg-blue-600 text-white';
+        else if (item.platform === '웹툰/웹소설') badgeColor = 'bg-brand-500 text-white';
+
+        // 썸네일 이미지 or 대체 그라데이션
+        const thumbHtml = item.thumbUrl 
+          ? `<img src="${item.thumbUrl}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">`
+          : `<div class="w-full h-full bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white/50">
+               <i data-lucide="link-2" class="w-8 h-8"></i>
+             </div>`;
+
+        return `
+          <div onclick="openDetailModal('${item.id}')" class="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col">
+            <!-- 썸네일 영역 (웹툰 비율 3:4) -->
+            <div class="relative w-full aspect-[3/4] bg-slate-100 overflow-hidden">
+              ${thumbHtml}
+              
+              <!-- 플랫폼 뱃지 -->
+              <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-extrabold shadow-sm ${badgeColor}">
+                ${item.platform || '링크'}
+              </span>
+
+              <!-- 요일 칩들 -->
+              <div class="absolute bottom-2 left-2 flex space-x-1">
+                ${(item.days || []).map(d => `<span class="px-1.5 py-0.5 bg-black/60 backdrop-blur-md text-white rounded text-[9px] font-bold">${d}</span>`).join('')}
+              </div>
+            </div>
+
+            <!-- 카드 하단 정보 -->
+            <div class="p-3 flex-1 flex flex-col justify-between">
+              <div>
+                <h4 class="font-bold text-xs text-slate-900 line-clamp-1 group-hover:text-brand-600 transition">
+                  ${item.title}
+                </h4>
+                <p class="text-[11px] text-slate-500 mt-1 line-clamp-1">
+                  ${item.memo || '등록된 메모 없음'}
+                </p>
+              </div>
+
+              <!-- 빠른 이어보기 버튼 -->
+              <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-[10px] font-bold text-brand-600 flex items-center space-x-0.5">
+                  <i data-lucide="play" class="w-3 h-3 fill-brand-600"></i>
+                  <span>이어보기</span>
+                </span>
+                <i data-lucide="chevron-right" class="w-3 h-3 text-slate-400"></i>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // 5. 상세 및 이어보기 모달 제어
+    function openDetailModal(id) {
+      const item = items.find(it => it.id === id);
+      if (!item) return;
+
+      currentSelectedItemId = id;
+
+      document.getElementById('detailTitle').textContent = item.title;
+      document.getElementById('detailPlatform').textContent = item.platform || '기타';
+      document.getElementById('detailDays').textContent = (item.days || []).join(', ') + '요일';
+      document.getElementById('detailMemo').textContent = item.memo || '등록된 메모가 없습니다.';
+      
+      const lastUrl = item.lastUrl || item.baseUrl;
+      document.getElementById('detailLastUrlText').textContent = lastUrl;
+      
+      if (item.updatedAt) {
+        const d = new Date(item.updatedAt);
+        document.getElementById('detailLastUpdated').textContent = `${d.getMonth()+1}/${d.getDate()} 갱신`;
+      } else {
+        document.getElementById('detailLastUpdated').textContent = '';
+      }
+
+      const thumbImg = document.getElementById('detailThumb');
+      if (item.thumbUrl) {
+        thumbImg.src = item.thumbUrl;
+        thumbImg.classList.remove('hidden');
+      } else {
+        thumbImg.classList.add('hidden');
+      }
+
+      document.getElementById('detailModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    // [핵심] 이어보기 클릭: 마지막 저장 링크로 이동 (Android 전용 웹뷰 연동)
+    function handleContinueClick() {
+      const item = items.find(it => it.id === currentSelectedItemId);
+      if (!item) return;
+      const targetUrl = item.lastUrl || item.baseUrl;
+      if (!targetUrl) return;
+
+      if (window.AndroidBridge && window.AndroidBridge.openViewer) {
+        window.AndroidBridge.openViewer(item.id, targetUrl, item.title || '');
+      } else {
+        window.open(targetUrl, '_blank');
+      }
+    }
+
+    // 기본 홈 링크 열기
+    function handleBaseUrlClick() {
+      const item = items.find(it => it.id === currentSelectedItemId);
+      if (!item) return;
+      if (!item.baseUrl) return;
+
+      if (window.AndroidBridge && window.AndroidBridge.openViewer) {
+        window.AndroidBridge.openViewer(item.id, item.baseUrl, item.title || '');
+      } else {
+        window.open(item.baseUrl, '_blank');
+      }
+    }
+
+    // Android 앱에서 다음 화로 넘어갈 때마다 실시간으로 자동 갱신되는 콜백!
+    window.onViewerUrlChanged = function(itemId, newUrl) {
+      if (!itemId || !newUrl) return;
+      const target = items.find(it => it.id === itemId);
+      if (target && target.lastUrl !== newUrl) {
+        target.lastUrl = newUrl;
+        target.updatedAt = new Date().toISOString();
+        saveItemsToStorage();
+        renderCards();
+        if (currentSelectedItemId === itemId) {
+          openDetailModal(itemId);
+        }
+      }
+    };
+
+    // 마지막 위치 간편 갱신 (전용 팝업 및 클립보드 기능)
+    function promptUpdateLastUrl() {
+      const item = items.find(it => it.id === currentSelectedItemId);
+      if (!item) return;
+
+      document.getElementById('quickUpdateUrl').value = item.lastUrl || item.baseUrl;
+      document.getElementById('quickUpdateMemo').value = item.memo || '';
+      document.getElementById('quickUpdateModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeQuickUpdateModal() {
+      document.getElementById('quickUpdateModal').classList.add('hidden');
+    }
+
+    async function pasteClipboardToQuickUpdate() {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            document.getElementById('quickUpdateUrl').value = text.trim();
+          }
+        } else {
+          alert('입력창을 길게 눌러 붙여넣기 해주세요.');
+        }
+      } catch(e) {
+        alert('입력창을 길게 눌러 직접 붙여넣어 주세요.');
+      }
+    }
+
+    function submitQuickUpdate() {
+      const item = items.find(it => it.id === currentSelectedItemId);
+      if (!item) return;
+
+      const newUrl = document.getElementById('quickUpdateUrl').value.trim();
+      const newMemo = document.getElementById('quickUpdateMemo').value.trim();
+
+      if (!newUrl) {
+        alert('새 링크를 입력해주세요.');
+        return;
+      }
+
+      item.lastUrl = newUrl;
+      if (newMemo) {
+        item.memo = newMemo;
+      }
+      item.updatedAt = new Date().toISOString();
+
+      saveItemsToStorage();
+      closeQuickUpdateModal();
+      openDetailModal(item.id);
+      renderCards();
+    }
+
+    // 6. 등록 / 수정 폼 제어
+    let selectedDays = [];
+    let selectedPlatform = '유튜브';
+
+    function handleThumbFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        document.getElementById('formThumbUrl').value = base64Data;
+        const preview = document.getElementById('formThumbPreview');
+        const container = document.getElementById('formThumbPreviewContainer');
+        preview.src = base64Data;
+        container.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setupFormListeners() {
+      // 요일 칩 클릭 토글
+      document.querySelectorAll('#formDayChips .day-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const day = btn.getAttribute('data-day');
+          if (selectedDays.includes(day)) {
+            selectedDays = selectedDays.filter(d => d !== day);
+            btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+            btn.classList.add('border-slate-200', 'text-slate-600');
+          } else {
+            selectedDays.push(day);
+            btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
+            btn.classList.remove('border-slate-200', 'text-slate-600');
+          }
+        });
+      });
+
+      // 플랫폼 칩 클릭 단일선택
+      document.querySelectorAll('#formPlatformChips .platform-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedPlatform = btn.getAttribute('data-platform');
+          document.querySelectorAll('#formPlatformChips .platform-chip').forEach(b => {
+            b.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+            b.classList.add('border-slate-200', 'text-slate-700');
+          });
+          btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+          btn.classList.remove('border-slate-200', 'text-slate-700');
+        });
+      });
+    }
+
+    function openAddModal() {
+      document.getElementById('formModalTitle').textContent = '새 링크 등록';
+      document.getElementById('formItemId').value = '';
+      document.getElementById('itemForm').reset();
+      document.getElementById('formThumbPreviewContainer').classList.add('hidden');
+      
+      // 요일 초기화: 현재 보고 있는 요일 자동 선택
+      selectedDays = activeDay === '전체' ? [todayKoreanDay] : [activeDay];
+      selectedPlatform = '유튜브';
+
+      updateFormChipsUI();
+      document.getElementById('formModal').classList.remove('hidden');
+    }
+
+    function editCurrentItem() {
+      const item = items.find(it => it.id === currentSelectedItemId);
+      if (!item) return;
+
+      closeDetailModal();
+
+      document.getElementById('formModalTitle').textContent = '링크 정보 수정';
+      document.getElementById('formItemId').value = item.id;
+      document.getElementById('formTitle').value = item.title;
+      document.getElementById('formBaseUrl').value = item.baseUrl;
+      document.getElementById('formLastUrl').value = item.lastUrl || '';
+      document.getElementById('formThumbUrl').value = item.thumbUrl || '';
+      document.getElementById('formMemo').value = item.memo || '';
+
+      if (item.thumbUrl) {
+        document.getElementById('formThumbPreview').src = item.thumbUrl;
+        document.getElementById('formThumbPreviewContainer').classList.remove('hidden');
+      } else {
+        document.getElementById('formThumbPreviewContainer').classList.add('hidden');
+      }
+
+      selectedDays = [...(item.days || [])];
+      selectedPlatform = item.platform || '유튜브';
+
+      updateFormChipsUI();
+      document.getElementById('formModal').classList.remove('hidden');
+    }
+
+    function updateFormChipsUI() {
+      // 요일 버튼 활성화 상태 반영
+      document.querySelectorAll('#formDayChips .day-chip').forEach(btn => {
+        const d = btn.getAttribute('data-day');
+        if (selectedDays.includes(d)) {
+          btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
+          btn.classList.remove('border-slate-200', 'text-slate-600');
+        } else {
+          btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+          btn.classList.add('border-slate-200', 'text-slate-600');
+        }
+      });
+
+      // 플랫폼 버튼 상태 반영
+      document.querySelectorAll('#formPlatformChips .platform-chip').forEach(btn => {
+        const p = btn.getAttribute('data-platform');
+        if (p === selectedPlatform) {
+          btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
+          btn.classList.remove('border-slate-200', 'text-slate-700');
+        } else {
+          btn.classList.remove('bg-slate-900', 'text-white', 'border-slate-900');
+          btn.classList.add('border-slate-200', 'text-slate-700');
+        }
+      });
+    }
+
+    function closeFormModal() {
+      document.getElementById('formModal').classList.add('hidden');
+    }
+
+    function saveItem(e) {
+      e.preventDefault();
+
+      if (selectedDays.length === 0) {
+        alert('최소 1개 이상의 요일을 선택해주세요!');
+        return;
+      }
+
+      const id = document.getElementById('formItemId').value || 'item-' + Date.now();
+      const title = document.getElementById('formTitle').value.trim();
+      const baseUrl = document.getElementById('formBaseUrl').value.trim();
+      let lastUrl = document.getElementById('formLastUrl').value.trim();
+      if (!lastUrl) lastUrl = baseUrl;
+
+      const thumbUrl = document.getElementById('formThumbUrl').value.trim();
+      const memo = document.getElementById('formMemo').value.trim();
+
+      const itemData = {
+        id,
+        title,
+        days: selectedDays,
+        platform: selectedPlatform,
+        baseUrl,
+        lastUrl,
+        thumbUrl,
+        memo,
+        updatedAt: new Date().toISOString()
+      };
+
+      const existingIndex = items.findIndex(it => it.id === id);
+      if (existingIndex > -1) {
+        items[existingIndex] = itemData;
+      } else {
+        items.unshift(itemData);
+      }
+
+      saveItemsToStorage();
+      closeFormModal();
+      renderCards();
+    }
+
+    function deleteCurrentItem() {
+      if (!confirm('이 링크를 삭제하시겠습니까?')) return;
+      items = items.filter(it => it.id !== currentSelectedItemId);
+      saveItemsToStorage();
+      closeDetailModal();
+      renderCards();
+    }
+
+    // 7. 검색 모달
+    function openSearchModal() {
+      document.getElementById('searchModal').classList.remove('hidden');
+      const input = document.getElementById('searchInput');
+      input.value = '';
+      input.focus();
+      handleSearch('');
+      lucide.createIcons();
+    }
+
+    function closeSearchModal() {
+      document.getElementById('searchModal').classList.add('hidden');
+    }
+
+    function handleSearch(query) {
+      const container = document.getElementById('searchResults');
+      const q = query.trim().toLowerCase();
+      
+      const matched = items.filter(it => 
+        it.title.toLowerCase().includes(q) || 
+        (it.memo && it.memo.toLowerCase().includes(q))
+      );
+
+      if (matched.length === 0) {
+        container.innerHTML = '<div class="py-4 text-center text-slate-400">일치하는 링크가 없습니다.</div>';
+        return;
+      }
+
+      container.innerHTML = matched.map(it => `
+        <div onclick="closeSearchModal(); openDetailModal('${it.id}')" class="py-2.5 px-1 hover:bg-slate-50 flex items-center justify-between cursor-pointer rounded-lg transition">
+          <div class="min-w-0 pr-2">
+            <div class="font-bold text-slate-900 truncate">${it.title}</div>
+            <div class="text-[10px] text-slate-400 truncate">${(it.days||[]).join(', ')}요일 · ${it.platform}</div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    // 8. 설정 및 백업
+    function openSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `linktoon_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (Array.isArray(parsed)) {
+            items = parsed;
+            saveItemsToStorage();
+            renderCards();
+            alert('데이터가 성공적으로 복원되었습니다!');
+            closeSettingsModal();
+          } else {
+            alert('올바른 백업 파일 형식이 아닙니다.');
+          }
+        } catch(err) {
+          alert('파일을 읽는 도중 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetToSampleData() {
+      if (confirm('샘플 데이터로 초기화하시겠습니까? (기존 데이터 삭제)')) {
+        items = SAMPLE_ITEMS;
+        saveItemsToStorage();
+        renderCards();
+        closeSettingsModal();
+      }
+    }
+
+    // 실행 시작
+    window.addEventListener('DOMContentLoaded', () => {
+      loadItems();
+      initUI();
+      setupFormListeners();
+    });
+  </script>
+</body>
+</html>
