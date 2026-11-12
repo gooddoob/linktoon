@@ -24,6 +24,7 @@ class ViewerActivity : AppCompatActivity() {
     private var latestUrl: String = ""
     private var latestTitle: String = ""
     private var latestH2Text: String = ""
+    private var extractScript: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +33,7 @@ class ViewerActivity : AppCompatActivity() {
         itemId = intent.getStringExtra("ITEM_ID") ?: ""
         initialUrl = intent.getStringExtra("TARGET_URL") ?: ""
         val title = intent.getStringExtra("TITLE") ?: "웹툰 뷰어"
+        extractScript = intent.getStringExtra("EXTRACT_SCRIPT")
         latestUrl = initialUrl
 
         tvTitle = findViewById(R.id.tvViewerTitle)
@@ -111,8 +113,11 @@ class ViewerActivity : AppCompatActivity() {
                     }
                 }
 
-                // 지정된 h2 스타일 태그 또는 회차 포함 태그의 텍스트 자동 추출
-                val js = """
+                // 지정된 h2 스타일 태그 또는 회차 포함 태그의 텍스트 자동 추출 (웹에서 동적으로 전달받은 스크립트 실행)
+                val js = if (!extractScript.isNullOrBlank()) {
+                    extractScript!!
+                } else {
+                    """
                     (function() {
                         var h2s = document.getElementsByTagName('h2');
                         for (var i = 0; i < h2s.length; i++) {
@@ -129,7 +134,8 @@ class ViewerActivity : AppCompatActivity() {
                         }
                         return '';
                     })();
-                """.trimIndent()
+                    """.trimIndent()
+                }
                 view?.evaluateJavascript(js) { res ->
                     if (!res.isNullOrBlank() && res != "null" && res != "\"\"") {
                         val parsed = res.trim().removeSurrounding("\"").replace("\\\"", "\"").replace("\\n", " ").trim()

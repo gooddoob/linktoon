@@ -51,14 +51,14 @@ jobs:
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.2.1
-          name: LinkToon Android v1.2.1 (특정 h2 태그 및 마지막 xxx화 자동 추출)
+          tag_name: v1.3.0
+          name: LinkToon Android v1.3.0 (최종 완전 무설치 자동 업데이트 버전)
           body: |
-            ### 🚀 링크툰(LinkToon) v1.2.1 업데이트 내역
+            ### 🚀 링크툰(LinkToon) v1.3.0 (최종 완결판)
             
-            - **특정 태그 기반 회차 추출:** `<h2 style="...padding-left:60px...">` 등 웹페이지 내 주요 헤딩 태그를 정밀 탐색하여 텍스트를 감지합니다.
-            - **마지막 `xxx화` 부분만 정밀 추출:** 태그 안의 긴 제목 전체 대신, 문장 맨 뒤에 적힌 회차(`150화`, `123화` 등)만 쏙 뽑아내어 카드 정보에 저장합니다.
-            - **모든 링크 범용 지원:** 특정 h2 태그가 없는 사이트라도 URL(`?no=123`) 및 제목에서 마지막 `xxx화`를 찾아 자동으로 갱신합니다.
+            - **영구 무설치 자동 업데이트 아키텍처 완성:** 뷰어 태그 감지 및 회차 추출 로직까지 100% 웹(GitHub)에서 실시간으로 원격 공급하도록 개편되었습니다.
+            - 앞으로 태그/스타일/로직/디자인/웹툰 목록이 바뀌어도 **스마트폰에서 APK를 다시 설치할 일이 영원히 없습니다 (0%).**
+            - `<h2 style="...padding-left:60px...">` 등 특정 태그 감지 및 문장 끝 `xxx화` 정밀 추출 지원.
           files: app/build/outputs/apk/debug/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

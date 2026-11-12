@@ -81,10 +81,16 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(object {
             @JavascriptInterface
             fun openViewer(itemId: String, url: String, title: String) {
+                openViewer(itemId, url, title, null)
+            }
+
+            @JavascriptInterface
+            fun openViewer(itemId: String, url: String, title: String, extractScript: String?) {
                 val intent = Intent(this@MainActivity, ViewerActivity::class.java).apply {
                     putExtra("ITEM_ID", itemId)
                     putExtra("TARGET_URL", url)
                     putExtra("TITLE", title)
+                    putExtra("EXTRACT_SCRIPT", extractScript)
                 }
                 viewerLauncher.launch(intent)
             }
