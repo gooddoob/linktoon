@@ -312,13 +312,17 @@
 
         <!-- 썸네일 이미지 링크 및 파일 선택 -->
         <div>
-          <label class="block font-bold text-slate-700 mb-1">썸네일 이미지 (URL 또는 갤러리/파일)</label>
+          <label class="block font-bold text-slate-700 mb-1">썸네일 이미지 (비우면 저장 시 카카오페이지에서 자동 검색)</label>
           <div class="space-y-1.5">
-            <input type="text" id="formThumbUrl" placeholder="이미지 URL 직접 입력 (https://...)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
+            <input type="text" id="formThumbUrl" placeholder="비워두면 제목으로 자동 검색 (또는 URL 직접 입력)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
             <div class="flex items-center space-x-2">
+              <button type="button" id="btnAutoKakaoThumb" onclick="autoFindKakaoThumbnail()" class="flex-1 py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-xl text-center cursor-pointer font-bold transition flex items-center justify-center space-x-1.5">
+                <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                <span>카카오페이지 자동 찾기</span>
+              </button>
               <label class="flex-1 py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-center cursor-pointer font-bold transition flex items-center justify-center space-x-1.5">
                 <i data-lucide="image" class="w-3.5 h-3.5"></i>
-                <span>내 폰 갤러리/파일에서 선택</span>
+                <span>갤러리/파일 선택</span>
                 <input type="file" id="formThumbFile" accept="image/*" onchange="handleThumbFileSelect(event)" class="hidden">
               </label>
               <div id="formThumbPreviewContainer" class="w-9 h-11 rounded-lg overflow-hidden bg-slate-100 hidden border border-slate-200 flex-shrink-0">
@@ -746,9 +750,16 @@
     // 3. 로컬 스토리지 초기화
     function loadItems() {
       const stored = localStorage.getItem('linktoon_items');
+      let hasStoredData = false;
       if (stored) {
         try {
-          items = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            items = parsed;
+            hasStoredData = true;
+          } else {
+            items = IS_CLEAN_MODE ? [] : SAMPLE_ITEMS;
+          }
         } catch(e) {
           items = IS_CLEAN_MODE ? [] : SAMPLE_ITEMS;
         }
@@ -756,7 +767,12 @@
         items = IS_CLEAN_MODE ? [] : SAMPLE_ITEMS;
       }
 
-      if (IS_CLEAN_MODE) {
+      if (IS_CLEAN_MODE || hasStoredData) {
+        items.forEach(it => {
+          if (!it.memo || it.memo.includes('최근 회차 이어보기')) {
+            it.memo = '1화부터 이어보기';
+          }
+        });
         saveItemsToStorage();
         return;
       }
@@ -1402,6 +1418,89 @@
       return null;
     }
 
+    // xx화 앞부분의 순수 작품 제목 추출
+    function extractTitleBeforeEpisode(rawTitle) {
+      if (!rawTitle) return '';
+      let cleaned = rawTitle
+        .replace(/\s*[:\-\|\/]\s*(네이버\s*웹툰|네이버\s*시리즈|카카오페이지|카카오웹툰|YouTube|유튜브|NAVER|웹툰\s*뷰어|만화).*$/i, '')
+        .trim();
+      const idx = cleaned.search(/([제\s]*\d+[\.\-]?\d*\s*화)/);
+      if (idx > 0) {
+        cleaned = cleaned.slice(0, idx).replace(/[\s:\-\|\/\[\]\<\>]+$/, '').trim();
+      }
+      return cleaned;
+    }
+
+    // 카카오페이지 원본 썸네일 자동 검색 브릿지
+    const pendingThumbRequests = {};
+
+    function requestKakaoThumbnail(keyword, mode, itemId) {
+      const searchWord = extractTitleBeforeEpisode(keyword);
+      if (!searchWord) return;
+      if (!(window.AndroidBridge && window.AndroidBridge.searchKakaoThumbnail)) {
+        if (mode === 'form') {
+          alert('카카오페이지 자동 검색은 링크툰 안드로이드 앱(v1.4.0 이상)에서 지원됩니다.');
+        }
+        return;
+      }
+      const reqId = 'thumb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+      pendingThumbRequests[reqId] = { mode, itemId, searchWord };
+      window.AndroidBridge.searchKakaoThumbnail(searchWord, reqId);
+    }
+
+    function autoFindKakaoThumbnail() {
+      const rawTitle = document.getElementById('formTitle').value.trim();
+      if (!rawTitle) {
+        alert('먼저 제목을 입력해 주세요.');
+        document.getElementById('formTitle').focus();
+        return;
+      }
+      const btn = document.getElementById('btnAutoKakaoThumb');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>검색 중...</span>';
+      }
+      requestKakaoThumbnail(rawTitle, 'form', null);
+    }
+
+    window.onKakaoThumbnailResult = function(requestId, thumbUrl) {
+      const req = pendingThumbRequests[requestId];
+      if (!req) return;
+      delete pendingThumbRequests[requestId];
+
+      if (req.mode === 'form') {
+        const btn = document.getElementById('btnAutoKakaoThumb');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="search" class="w-3.5 h-3.5"></i><span>카카오페이지 자동 찾기</span>';
+          lucide.createIcons();
+        }
+        if (thumbUrl) {
+          document.getElementById('formThumbUrl').value = thumbUrl;
+          const preview = document.getElementById('formThumbPreview');
+          const container = document.getElementById('formThumbPreviewContainer');
+          if (preview && container) {
+            preview.src = thumbUrl;
+            container.classList.remove('hidden');
+          }
+          showToast('🖼️ 카카오페이지 원본 썸네일을 찾았습니다!');
+        } else {
+          showToast('카카오페이지에서 일치하는 썸네일을 찾지 못했습니다.');
+        }
+      } else if (req.mode === 'item' && thumbUrl && req.itemId) {
+        const target = items.find(it => it.id === req.itemId);
+        if (target && !target.thumbUrl) {
+          target.thumbUrl = thumbUrl;
+          saveItemsToStorage();
+          renderCards();
+          if (currentSelectedItemId === req.itemId) {
+            openDetailModal(req.itemId);
+          }
+          showToast(`🖼️ '${target.title}'의 카카오페이지 썸네일이 자동 등록되었습니다!`);
+        }
+      }
+    };
+
     // Android 앱에서 다음 화로 넘어가거나 뷰어에서 뒤로가기 눌렀을 때 호출되는 콜백!
     window.onViewerUrlChanged = function(itemId, newUrl, newTitle) {
       if (!itemId) return;
@@ -1420,6 +1519,14 @@
       if (autoInfo && target.memo !== autoInfo) {
         target.memo = autoInfo;
         changed = true;
+      }
+
+      // 썸네일이 비어있다면 xx화 앞의 제목으로 카카오페이지 썸네일 자동 검색
+      if (!target.thumbUrl) {
+        const extractedTitle = extractTitleBeforeEpisode(newTitle) || target.title;
+        if (extractedTitle) {
+          requestKakaoThumbnail(extractedTitle, 'item', target.id);
+        }
       }
 
       if (changed) {
@@ -1649,6 +1756,11 @@
       saveItemsToStorage();
       closeFormModal();
       renderCards();
+
+      // 썸네일 입력란을 비우고 저장한 경우 제목 기반으로 카카오페이지에서 자동 검색
+      if (!thumbUrl && title) {
+        requestKakaoThumbnail(title, 'item', id);
+      }
     }
 
     function deleteCurrentItem() {
