@@ -378,9 +378,26 @@
 
       <div class="space-y-2 mb-4">
         <button onclick="exportData()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl flex items-center justify-center space-x-1.5 transition">
-          <i data-lucide="download" class="w-4 h-4"></i>
-          <span>데이터 파일로 백업 (JSON 다운로드)</span>
+          <i data-lucide="copy" class="w-4 h-4"></i>
+          <span>백업 데이터 복사 / 다운로드</span>
         </button>
+
+        <div id="backupTextBox" class="hidden space-y-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+          <p class="text-[11px] text-slate-600 font-medium">아래 백업 텍스트가 클립보드에 복사되었습니다. 메모장 등에 붙여넣어 보관하세요.</p>
+          <textarea id="backupTextArea" readonly rows="3" onclick="this.select()" class="w-full text-[11px] font-mono bg-white border border-slate-200 rounded-lg p-2 text-slate-700 focus:outline-none"></textarea>
+        </div>
+
+        <button onclick="toggleRestoreTextBox()" class="w-full py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold rounded-xl flex items-center justify-center space-x-1.5 transition">
+          <i data-lucide="clipboard-paste" class="w-4 h-4"></i>
+          <span>백업 텍스트 붙여넣기로 복원</span>
+        </button>
+
+        <div id="restoreTextBox" class="hidden space-y-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+          <textarea id="restoreTextArea" rows="3" placeholder="복사해 둔 백업 텍스트(JSON)를 여기에 붙여넣으세요..." class="w-full text-[11px] font-mono bg-white border border-slate-200 rounded-lg p-2 text-slate-700 focus:outline-none focus:border-brand-500"></textarea>
+          <button onclick="restoreFromText()" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-xs transition">
+            이 내용으로 복원하기
+          </button>
+        </div>
 
         <label class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer transition">
           <i data-lucide="upload" class="w-4 h-4"></i>
@@ -1825,16 +1842,77 @@
 
     function closeSettingsModal() {
       document.getElementById('settingsModal').classList.add('hidden');
+      document.getElementById('backupTextBox').classList.add('hidden');
+      document.getElementById('restoreTextBox').classList.add('hidden');
+    }
+
+    function copyTextFallback(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      ta.remove();
     }
 
     function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items, null, 2));
+      const jsonText = JSON.stringify(items, null, 2);
+
+      // 1) WebView에서도 바로 백업할 수 있도록 텍스트 박스 표시 + 클립보드 복사
+      const box = document.getElementById('backupTextBox');
+      const area = document.getElementById('backupTextArea');
+      area.value = jsonText;
+      box.classList.remove('hidden');
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(jsonText).catch(() => copyTextFallback(jsonText));
+      } else {
+        copyTextFallback(jsonText);
+      }
+
+      // 2) PC/일반 브라우저용 파일 다운로드도 함께 시도
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonText);
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
       downloadAnchor.setAttribute("download", `linktoon_backup_${new Date().toISOString().slice(0,10)}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+
+      alert('백업 데이터가 클립보드에 복사되었습니다!\n메모장 등에 붙여넣어 보관해 두세요.');
+    }
+
+    function toggleRestoreTextBox() {
+      const box = document.getElementById('restoreTextBox');
+      box.classList.toggle('hidden');
+    }
+
+    function applyImportedJson(rawText) {
+      try {
+        const parsed = JSON.parse(rawText);
+        if (Array.isArray(parsed)) {
+          items = parsed;
+          saveItemsToStorage();
+          renderCards();
+          alert('데이터가 성공적으로 복원되었습니다!');
+          closeSettingsModal();
+        } else {
+          alert('올바른 백업 데이터 형식이 아닙니다.');
+        }
+      } catch (err) {
+        alert('백업 데이터를 읽는 도중 오류가 발생했습니다.');
+      }
+    }
+
+    function restoreFromText() {
+      const raw = document.getElementById('restoreTextArea').value.trim();
+      if (!raw) {
+        alert('복원할 백업 텍스트를 붙여넣어 주세요.');
+        return;
+      }
+      applyImportedJson(raw);
     }
 
     function importData(e) {
@@ -1843,20 +1921,7 @@
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        try {
-          const parsed = JSON.parse(evt.target.result);
-          if (Array.isArray(parsed)) {
-            items = parsed;
-            saveItemsToStorage();
-            renderCards();
-            alert('데이터가 성공적으로 복원되었습니다!');
-            closeSettingsModal();
-          } else {
-            alert('올바른 백업 파일 형식이 아닙니다.');
-          }
-        } catch(err) {
-          alert('파일을 읽는 도중 오류가 발생했습니다.');
-        }
+        applyImportedJson(evt.target.result);
       };
       reader.readAsText(file);
     }
