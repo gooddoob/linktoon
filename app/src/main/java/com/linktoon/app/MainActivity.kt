@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -115,10 +116,13 @@ class MainActivity : AppCompatActivity() {
         activeSearchId = requestId
 
         if (searchWebView == null) {
-            searchWebView = WebView(this).apply {
+            searchWebView = findViewById<WebView>(R.id.searchWebView).apply {
+                CookieManager.getInstance().setAcceptCookie(true)
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.databaseEnabled = true
+                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                 settings.userAgentString = settings.userAgentString.replace("; wv", "")
             }
         }
@@ -144,8 +148,12 @@ class MainActivity : AppCompatActivity() {
                 (function() {
                     var imgs = document.querySelectorAll('img');
                     for (var i = 0; i < imgs.length; i++) {
-                        var src = imgs[i].getAttribute('src') || imgs[i].currentSrc || imgs[i].getAttribute('data-src') || '';
-                        if (src.indexOf('dn-img-page.kakao.com') !== -1) {
+                        var src = imgs[i].currentSrc || imgs[i].getAttribute('src') || imgs[i].getAttribute('data-src') || '';
+                        if (!src && imgs[i].getAttribute('srcset')) {
+                            src = imgs[i].getAttribute('srcset').split(',')[0].trim().split(' ')[0];
+                        }
+                        if (src.indexOf('dn-img-page.kakao.com') !== -1 || (src.indexOf('kakaocdn.net/dn/') !== -1 && src.indexOf('pageweb') === -1)) {
+                            if (src.indexOf('//') === 0) src = 'https:' + src;
                             return src;
                         }
                     }
@@ -159,13 +167,16 @@ class MainActivity : AppCompatActivity() {
 
             wv.evaluateJavascript(extractJs) { result ->
                 if (resolved || activeSearchId != requestId) return@evaluateJavascript
-                val cleaned = result?.trim()?.removeSurrounding("\"")?.replace("\\\"", "\"") ?: ""
+                var cleaned = result?.trim()?.removeSurrounding("\"")?.replace("\\\"", "\"") ?: ""
+                if (cleaned.startsWith("//")) {
+                    cleaned = "https:$cleaned"
+                }
                 if (cleaned == "NO_RESULT") {
                     finishSearch("")
                 } else if (cleaned.startsWith("http")) {
                     finishSearch(cleaned)
-                } else if (attempt < 5) {
-                    searchHandler.postDelayed({ checkDom(attempt + 1) }, 700)
+                } else if (attempt < 14) {
+                    searchHandler.postDelayed({ checkDom(attempt + 1) }, 500)
                 } else {
                     finishSearch("")
                 }
@@ -176,7 +187,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 if (!resolved && activeSearchId == requestId) {
-                    searchHandler.postDelayed({ checkDom(0) }, 600)
+                    searchHandler.postDelayed({ checkDom(0) }, 500)
                 }
             }
 
@@ -193,8 +204,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         wv.loadUrl(searchUrl)
-        // Hard timeout after 5 seconds
-        searchHandler.postDelayed({ finishSearch("") }, 5000)
+        // Hard timeout after 10 seconds
+        searchHandler.postDelayed({ finishSearch("") }, 10000)
     }
 
     override fun onDestroy() {

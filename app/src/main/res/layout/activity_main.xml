@@ -5,6 +5,14 @@
     android:background="#FFFFFF">
 
     <WebView
+        android:id="@+id/searchWebView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.0"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <WebView
         android:id="@+id/mainWebView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

@@ -55,8 +55,8 @@ jobs:
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.4.0
-          name: LinkToon Android v1.4.0 (카카오페이지 원본 썸네일 자동 검색 지원)
+          tag_name: v1.4.1
+          name: LinkToon Android v1.4.1 (카카오페이지 썸네일 검색 안정화)
           body: |
             ### 🚀 링크툰(LinkToon) v1.4.0 업데이트 내역
             

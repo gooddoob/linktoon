@@ -1439,12 +1439,17 @@
       if (!searchWord) return;
       if (!(window.AndroidBridge && window.AndroidBridge.searchKakaoThumbnail)) {
         if (mode === 'form') {
-          alert('카카오페이지 자동 검색은 링크툰 안드로이드 앱(v1.4.0 이상)에서 지원됩니다.');
+          alert('카카오페이지 자동 검색은 최신 링크툰 앱(v1.4.1 이상)에서 지원됩니다.');
+        } else {
+          showToast('⚠️ 썸네일 자동 검색은 최신 앱(v1.4.1) 설치 후 작동합니다.');
         }
         return;
       }
       const reqId = 'thumb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
       pendingThumbRequests[reqId] = { mode, itemId, searchWord };
+      if (mode === 'item') {
+        showToast(`🔍 '${searchWord}' 카카오페이지 썸네일 찾는 중...`);
+      }
       window.AndroidBridge.searchKakaoThumbnail(searchWord, reqId);
     }
 
