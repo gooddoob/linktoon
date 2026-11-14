@@ -17,6 +17,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
+    flavorDimensions += "edition"
+    productFlavors {
+        create("personal") {
+            dimension = "edition"
+            buildConfigField("String", "START_URL", "\"https://gooddoob.github.io/linktoon/\"")
+            buildConfigField("String", "OFFLINE_URL", "\"file:///android_asset/index.html\"")
+        }
+        create("clean") {
+            dimension = "edition"
+            buildConfigField("String", "START_URL", "\"https://gooddoob.github.io/linktoon/?clean=1\"")
+            buildConfigField("String", "OFFLINE_URL", "\"file:///android_asset/index.html?clean=1\"")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

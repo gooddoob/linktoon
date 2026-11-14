@@ -15,8 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
-    private val onlineUrl = "https://gooddoob.github.io/linktoon/"
-    private val offlineAssetUrl = "file:///android_asset/index.html"
+    private val onlineUrl = BuildConfig.START_URL
+    private val offlineAssetUrl = BuildConfig.OFFLINE_URL
 
     private val viewerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
