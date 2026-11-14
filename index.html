@@ -384,7 +384,7 @@
           <input type="file" accept=".json" onchange="importData(event)" class="hidden">
         </label>
 
-        <button onclick="resetToSampleData()" class="w-full py-2 text-slate-400 hover:text-slate-600 font-medium">
+        <button id="btnResetData" onclick="resetToSampleData()" class="w-full py-2 text-slate-400 hover:text-slate-600 font-medium">
           기본 예시 데이터로 초기화
         </button>
       </div>
@@ -412,7 +412,8 @@
 
   <!-- ================= JAVASCRIPT ================= -->
   <script>
-    // 1. 요일 정의
+    // 1. 요일 정의 및 클린 모드 감지 (?clean=1)
+    const IS_CLEAN_MODE = new URLSearchParams(window.location.search).get('clean') === '1';
     const DAYS = ['월', '화', '수', '목', '금', '토', '일', '전체'];
     const DAY_MAP = ['일', '월', '화', '수', '목', '금', '토']; // JS getDay() 매핑
     
@@ -749,10 +750,15 @@
         try {
           items = JSON.parse(stored);
         } catch(e) {
-          items = SAMPLE_ITEMS;
+          items = IS_CLEAN_MODE ? [] : SAMPLE_ITEMS;
         }
       } else {
-        items = SAMPLE_ITEMS;
+        items = IS_CLEAN_MODE ? [] : SAMPLE_ITEMS;
+      }
+
+      if (IS_CLEAN_MODE) {
+        saveItemsToStorage();
+        return;
       }
 
       // 등록 보장할 웹툰 목록 (월/화/금)
@@ -1739,6 +1745,15 @@
     }
 
     function resetToSampleData() {
+      if (IS_CLEAN_MODE) {
+        if (confirm('등록된 모든 링크를 비우고 초기화하시겠습니까?')) {
+          items = [];
+          saveItemsToStorage();
+          renderCards();
+          closeSettingsModal();
+        }
+        return;
+      }
       if (confirm('샘플 데이터로 초기화하시겠습니까? (기존 데이터 삭제)')) {
         items = SAMPLE_ITEMS;
         saveItemsToStorage();
@@ -1752,6 +1767,10 @@
       loadItems();
       initUI();
       setupFormListeners();
+      if (IS_CLEAN_MODE) {
+        const resetBtn = document.getElementById('btnResetData');
+        if (resetBtn) resetBtn.textContent = '등록된 목록 전체 비우기 (초기화)';
+      }
     });
   </script>
 </body>
