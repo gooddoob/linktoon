@@ -55,14 +55,16 @@ jobs:
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.3.0
-          name: LinkToon Android v1.3.0 (최종 완전 무설치 자동 업데이트 버전)
+          tag_name: v1.4.0
+          name: LinkToon Android v1.4.0 (카카오페이지 원본 썸네일 자동 검색 지원)
           body: |
-            ### 🚀 링크툰(LinkToon) v1.3.0 (최종 완결판)
+            ### 🚀 링크툰(LinkToon) v1.4.0 업데이트 내역
             
-            - **영구 무설치 자동 업데이트 아키텍처 완성:** 뷰어 태그 감지 및 회차 추출 로직까지 100% 웹(GitHub)에서 실시간으로 원격 공급하도록 개편되었습니다.
-            - **친구 공유용 클린 버전(`LinkToon-Clean.apk`) 추가:** 기본 등록 웹툰 28개 없이 깨끗한 빈 화면으로 시작하며, 동일하게 무설치 자동 업데이트가 적용됩니다.
-            - `<h2 style="...padding-left:60px...">` 등 특정 태그 감지 및 문장 끝 `xxx화` 정밀 추출 지원.
+            - **카카오페이지 원본 썸네일 자동 검색:** 새 링크 등록 시 썸네일을 비워두거나 `[카카오페이지 자동 찾기]` 버튼을 누르면 제목에 맞는 원본 웹툰 표지를 자동으로 찾아서 등록합니다.
+            - **사용자 목록 100% 보존:** 기존 폰에 등록/수정/삭제해 둔 내 목록을 절대 덮어쓰거나 훼손하지 않습니다.
+            - **개인용 & 친구 공유용 동시 빌드:**
+              - `app-debug.apk`: 개인용 (기존 목록 유지)
+              - `LinkToon-Clean.apk`: 친구 공유용 (완전 빈 화면으로 시작, 동일하게 자동 업데이트 지원)
           files: dist/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
