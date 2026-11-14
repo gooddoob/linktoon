@@ -104,14 +104,20 @@ class MainActivity : AppCompatActivity() {
 
             @JavascriptInterface
             fun searchKakaoThumbnail(keyword: String, requestId: String) {
+                searchKakaoThumbnail(keyword, requestId, "")
+            }
+
+            // categoryUid: 카카오페이지 검색 분류 ("10" 웹툰, "11" 웹소설, "" 전체). 값은 웹(index.html)이 정한다.
+            @JavascriptInterface
+            fun searchKakaoThumbnail(keyword: String, requestId: String, categoryUid: String) {
                 runOnUiThread {
-                    startKakaoThumbnailSearch(keyword, requestId)
+                    startKakaoThumbnailSearch(keyword, requestId, categoryUid)
                 }
             }
         }, "AndroidBridge")
     }
 
-    private fun startKakaoThumbnailSearch(keyword: String, requestId: String) {
+    private fun startKakaoThumbnailSearch(keyword: String, requestId: String, categoryUid: String) {
         searchHandler.removeCallbacksAndMessages(null)
         activeSearchId = requestId
 
@@ -128,7 +134,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         val wv = searchWebView!!
-        val searchUrl = "https://page.kakao.com/search/result?keyword=" + Uri.encode(keyword)
+        val searchUrl = "https://page.kakao.com/search/result?keyword=" + Uri.encode(keyword) +
+            if (categoryUid.isNotEmpty()) "&categoryUid=" + Uri.encode(categoryUid) else ""
         var resolved = false
 
         fun finishSearch(thumbUrl: String) {

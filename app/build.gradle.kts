@@ -11,8 +11,8 @@ android {
         applicationId = "com.linktoon.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 7
-        versionName = "1.4.1"
+        versionCode = 8
+        versionName = "1.4.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -32,6 +32,20 @@ android {
             dimension = "edition"
             buildConfigField("String", "START_URL", "\"https://gooddoob.github.io/linktoon/?clean=1\"")
             buildConfigField("String", "OFFLINE_URL", "\"file:///android_asset/index.html?clean=1\"")
+        }
+    }
+
+    // CI가 KEYSTORE_FILE을 넘기면 고정 키로 서명한다(빌드마다 서명이 바뀌면 덮어쓰기 설치가 거부됨).
+    // 환경변수가 없는 로컬 빌드는 기본 디버그 키를 그대로 쓴다.
+    signingConfigs {
+        System.getenv("KEYSTORE_FILE")?.let { path ->
+            getByName("debug") {
+                storeFile = file(path)
+                storeType = "pkcs12"
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = "linktoon"
+                keyPassword = System.getenv("KEYSTORE_PASSWORD")
+            }
         }
     }
 

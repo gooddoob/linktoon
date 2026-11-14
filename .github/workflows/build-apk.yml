@@ -32,12 +32,31 @@ jobs:
       - name: Grant Execute Permission for Gradlew
         run: chmod +x gradlew
 
+      - name: Restore Signing Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "::error::KEYSTORE_BASE64 secret이 없습니다"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/linktoon.p12"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/linktoon.p12" >> "$GITHUB_ENV"
+
       - name: Assemble Debug APKs (Personal & Clean)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           ./gradlew assemblePersonalDebug assembleCleanDebug --stacktrace
           mkdir -p dist
           cp app/build/outputs/apk/personal/debug/*.apk dist/app-debug.apk
           cp app/build/outputs/apk/clean/debug/*.apk dist/LinkToon-Clean.apk
+
+      - name: Verify Signing Certificate
+        # 고정 키의 인증서 SHA-256. 서명이 다르면 기존 앱 위에 설치가 안 되므로 여기서 빌드를 실패시킨다.
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          for apk in dist/*.apk; do
+            "$apksigner" verify --print-certs "$apk" | grep -qi "f591bbb3339782d85e5cb29445f41aa209244999566805cbee291f41cb176a9d" \
+              || { echo "::error::$apk 서명 인증서가 고정 키와 다릅니다"; exit 1; }
+          done
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -55,16 +74,14 @@ jobs:
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.4.1
-          name: LinkToon Android v1.4.1 (카카오페이지 썸네일 검색 안정화)
+          tag_name: v1.4.2
+          name: LinkToon Android v1.4.2 (서명 키 고정, 웹툰/소설 표지 선택 검색)
           body: |
-            ### 🚀 링크툰(LinkToon) v1.4.0 업데이트 내역
-            
-            - **카카오페이지 원본 썸네일 자동 검색:** 새 링크 등록 시 썸네일을 비워두거나 `[카카오페이지 자동 찾기]` 버튼을 누르면 제목에 맞는 원본 웹툰 표지를 자동으로 찾아서 등록합니다.
-            - **사용자 목록 100% 보존:** 기존 폰에 등록/수정/삭제해 둔 내 목록을 절대 덮어쓰거나 훼손하지 않습니다.
-            - **개인용 & 친구 공유용 동시 빌드:**
-              - `app-debug.apk`: 개인용 (기존 목록 유지)
-              - `LinkToon-Clean.apk`: 친구 공유용 (완전 빈 화면으로 시작, 동일하게 자동 업데이트 지원)
+            ### 링크툰(LinkToon) v1.4.2
+
+            - **서명 키 고정:** 이 버전부터 모든 빌드가 같은 키로 서명됩니다. v1.4.1 이하에서 올라올 때는 서명이 달라 한 번 삭제 후 설치해야 하고(삭제 전 설정에서 백업 텍스트 복사), 이후로는 덮어쓰기 업데이트가 됩니다.
+            - **표지 검색 분류:** 자동 검색은 카카오페이지 웹툰 표지만 찾고, 등록 화면에서 `웹툰 표지 찾기` / `소설 표지 찾기`를 고를 수 있습니다.
+            - `app-debug.apk`: 개인용 / `LinkToon-Clean.apk`: 친구 공유용(빈 화면으로 시작)
           files: dist/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

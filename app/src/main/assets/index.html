@@ -312,14 +312,20 @@
 
         <!-- 썸네일 이미지 링크 및 파일 선택 -->
         <div>
-          <label class="block font-bold text-slate-700 mb-1">썸네일 이미지 (비우면 저장 시 카카오페이지에서 자동 검색)</label>
+          <label class="block font-bold text-slate-700 mb-1">썸네일 이미지 (비우면 저장 시 카카오페이지 웹툰 표지 자동 검색)</label>
           <div class="space-y-1.5">
-            <input type="text" id="formThumbUrl" placeholder="비워두면 제목으로 자동 검색 (또는 URL 직접 입력)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
+            <input type="text" id="formThumbUrl" placeholder="비워두면 제목으로 웹툰 표지 자동 검색 (또는 URL 직접 입력)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs">
             <div class="flex items-center space-x-2">
-              <button type="button" id="btnAutoKakaoThumb" onclick="autoFindKakaoThumbnail()" class="flex-1 py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-xl text-center cursor-pointer font-bold transition flex items-center justify-center space-x-1.5">
+              <button type="button" onclick="autoFindKakaoThumbnail('10')" class="kakao-thumb-btn flex-1 py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-xl text-center cursor-pointer font-bold transition flex items-center justify-center space-x-1.5 disabled:opacity-50">
                 <i data-lucide="search" class="w-3.5 h-3.5"></i>
-                <span>카카오페이지 자동 찾기</span>
+                <span>웹툰 표지 찾기</span>
               </button>
+              <button type="button" onclick="autoFindKakaoThumbnail('11')" class="kakao-thumb-btn flex-1 py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-xl text-center cursor-pointer font-bold transition flex items-center justify-center space-x-1.5 disabled:opacity-50">
+                <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                <span>소설 표지 찾기</span>
+              </button>
+            </div>
+            <div class="flex items-center space-x-2">
               <label class="flex-1 py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-center cursor-pointer font-bold transition flex items-center justify-center space-x-1.5">
                 <i data-lucide="image" class="w-3.5 h-3.5"></i>
                 <span>갤러리/파일 선택</span>
@@ -1451,38 +1457,42 @@
     // 카카오페이지 원본 썸네일 자동 검색 브릿지
     const pendingThumbRequests = {};
 
-    function requestKakaoThumbnail(keyword, mode, itemId) {
+    // categoryUid: 카카오페이지 검색 분류 ('10' 웹툰, '11' 웹소설). 자동 검색은 웹툰 표지만 찾는다.
+    // 요청을 보냈으면 true를 돌려준다.
+    function requestKakaoThumbnail(keyword, mode, itemId, categoryUid = '10') {
       const searchWord = extractTitleBeforeEpisode(keyword);
-      if (!searchWord) return;
+      if (!searchWord) return false;
       if (!(window.AndroidBridge && window.AndroidBridge.searchKakaoThumbnail)) {
         if (mode === 'form') {
           alert('카카오페이지 자동 검색은 최신 링크툰 앱(v1.4.1 이상)에서 지원됩니다.');
         } else {
           showToast('⚠️ 썸네일 자동 검색은 최신 앱(v1.4.1) 설치 후 작동합니다.');
         }
-        return;
+        return false;
       }
       const reqId = 'thumb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
       pendingThumbRequests[reqId] = { mode, itemId, searchWord };
-      if (mode === 'item') {
-        showToast(`🔍 '${searchWord}' 카카오페이지 썸네일 찾는 중...`);
+      const kind = categoryUid === '11' ? '소설' : '웹툰';
+      showToast(`🔍 '${searchWord}' 카카오페이지 ${kind} 표지 찾는 중...`);
+      try {
+        window.AndroidBridge.searchKakaoThumbnail(searchWord, reqId, categoryUid);
+      } catch (e) {
+        // v1.4.1 이하 앱에는 분류를 받는 브릿지가 없다 → 분류 없는 전체 검색으로 대신한다
+        window.AndroidBridge.searchKakaoThumbnail(searchWord, reqId);
       }
-      window.AndroidBridge.searchKakaoThumbnail(searchWord, reqId);
+      return true;
     }
 
-    function autoFindKakaoThumbnail() {
+    function autoFindKakaoThumbnail(categoryUid) {
       const rawTitle = document.getElementById('formTitle').value.trim();
       if (!rawTitle) {
         alert('먼저 제목을 입력해 주세요.');
         document.getElementById('formTitle').focus();
         return;
       }
-      const btn = document.getElementById('btnAutoKakaoThumb');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span>검색 중...</span>';
+      if (requestKakaoThumbnail(rawTitle, 'form', null, categoryUid)) {
+        document.querySelectorAll('.kakao-thumb-btn').forEach(b => b.disabled = true);
       }
-      requestKakaoThumbnail(rawTitle, 'form', null);
     }
 
     window.onKakaoThumbnailResult = function(requestId, thumbUrl) {
@@ -1491,12 +1501,7 @@
       delete pendingThumbRequests[requestId];
 
       if (req.mode === 'form') {
-        const btn = document.getElementById('btnAutoKakaoThumb');
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<i data-lucide="search" class="w-3.5 h-3.5"></i><span>카카오페이지 자동 찾기</span>';
-          lucide.createIcons();
-        }
+        document.querySelectorAll('.kakao-thumb-btn').forEach(b => b.disabled = false);
         if (thumbUrl) {
           document.getElementById('formThumbUrl').value = thumbUrl;
           const preview = document.getElementById('formThumbPreview');
